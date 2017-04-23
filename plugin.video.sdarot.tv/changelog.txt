@@ -1,3 +1,5 @@
+[B]Version 2.4.4[/B]
+- Added fanart in all menus.
 [B]Version 2.4.3[/B]
 - requires sdarot repo.
 [B]Version 2.4.2[/B]

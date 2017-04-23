@@ -13,7 +13,6 @@ import unicodedata
 ##General vars		
 __plugin__ = "Sdarot.TV Video"
 __author__ = "Cubicle"
-
 __image_path__ = ''
 __settings__ = xbmcaddon.Addon(id='plugin.video.sdarot.tv')
 __language__ = __settings__.getLocalizedString
@@ -22,6 +21,7 @@ addonIcon = __settings__.getAddonInfo('icon')
 __PLUGIN_PATH__ = __settings__.getAddonInfo('path')
 LIB_PATH = xbmc.translatePath( os.path.join( __PLUGIN_PATH__, 'resources', 'lib' ) )
 sys.path.append (LIB_PATH)
+fanart = xbmc.translatePath(os.path.join( __PLUGIN_PATH__,"fanart.jpg"))
 
 
 dbg = False # used for simple downloader logging
@@ -54,14 +54,14 @@ urllib2.install_opener(opener)
 
 def MAIN_MENU():
 	CHECK_LOGIN()
-	addDir('[COLOR blue]Clean chache - ניקוי מטמון[/COLOR]',"clean",7,'', isFolder=False)
-	addDir('[COLOR red]Search - חפש[/COLOR]',DOMAIN+"/search",6,'')
-	addDir("הכל א-ת","all-heb",2,'',DOMAIN+'/series');
-	addDir("הכל a-z","all-eng",2,'',DOMAIN+'/series');
+	addDir('[COLOR blue]Clean chache - ניקוי מטמון[/COLOR]',"clean",7,fanart, isFolder=False)
+	addDir('[COLOR red]Search - חפש[/COLOR]',DOMAIN+"/search",6,fanart)
+	addDir("הכל א-ת","all-heb",2,fanart,DOMAIN+'/series');
+	addDir("הכל a-z","all-eng",2,fanart,DOMAIN+'/series');
 	page = getData(DOMAIN+'/series',referer=DOMAIN)
 	matches = re.compile('<li><a href="/series/genre/(.*?)">(.*?)</a>').findall(page)
 	for match in matches:
-		 addDir(str(match[1]),"all-heb",2,'',DOMAIN+'/series/genre/'+str(match[0]))
+		 addDir(str(match[1]),"all-heb",2,fanart,DOMAIN+'/series/genre/'+str(match[0]))
 	
 def SearchSdarot(url,search_entered):
 	search_entered= ''

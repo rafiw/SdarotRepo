@@ -110,6 +110,7 @@ def getParams(arg):
 		return param
 	
 def addDir(name, url, mode, iconimage='DefaultFolder.png', elementId=None, summary='', fanart='',contextMenu=None, isFolder=True):
+		if fanart=='': fanart = xbmc.translatePath(os.path.join( __PLUGIN_PATH__,"fanart.jpg"))
 		u = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) + "&name=" + name+ "&summary=" + urllib.quote_plus(summary)
 		if not elementId == None and not elementId == '':
 			u += "&module=" + urllib.quote_plus(elementId)
@@ -124,10 +125,12 @@ def addDir(name, url, mode, iconimage='DefaultFolder.png', elementId=None, summa
 		ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=isFolder)
 		return ok
 
-def addVideoLink(name, url, mode, iconimage='DefaultFolder.png', summary = '', contextMenu=True):
+def addVideoLink(name, url, mode, iconimage='DefaultFolder.png', summary = '', fanart='', contextMenu=True):
+		if fanart=='': fanart = xbmc.translatePath(os.path.join( __PLUGIN_PATH__,"fanart.jpg"))
 		u = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) + "&name=" + "&summary=" + urllib.quote_plus(summary)
 		liz = xbmcgui.ListItem(name, iconImage=iconimage, thumbnailImage=iconimage)
 		liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote(name), "Plot": UnEscapeXML(urllib.unquote(summary))})	
+		liz.setProperty("Fanart_Image", fanart)
 		liz.setProperty('IsPlayable', 'true')
 		if contextMenu:
 			liz.addContextMenuItems(items=[(__language__(30005).encode('utf-8'), 'XBMC.Container.Update({0})'.format(u.replace('mode=4', 'mode=8')))])

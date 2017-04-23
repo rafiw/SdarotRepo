@@ -2,4 +2,4 @@
 .pydevproject
 .settings
 *.pyo
-Thumbs.db
+*.py
