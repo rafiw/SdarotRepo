@@ -97,51 +97,49 @@ def getParams(arg):
 		if len(paramstring)>=2:
 			params=arg
 			cleanedparams=params.replace('?','')
-			if (params[len(params)-1]=='/'):
-				params=params[0:len(params)-2]
 			pairsofparams=cleanedparams.split('&')
 			param={}
-			for i in range(len(pairsofparams)):
-				splitparams={}
-				splitparams=pairsofparams[i].split('=')
+			for elem in pairsofparams:
+				splitparams=elem.split('=')
 				if (len(splitparams))==2:	
 					param[splitparams[0]]=splitparams[1]
-								
 		return param
 	
 def addDir(name, url, mode, iconimage='DefaultFolder.png', elementId=None, summary='', fanart='',contextMenu=None, isFolder=True):
-		if fanart=='': fanart = xbmc.translatePath(os.path.join( __PLUGIN_PATH__,"fanart.jpg"))
-		u = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) + "&name=" + name+ "&summary=" + urllib.quote_plus(summary)
-		if not elementId == None and not elementId == '':
-			u += "&module=" + urllib.quote_plus(elementId)
-		liz = xbmcgui.ListItem(name, iconImage=iconimage, thumbnailImage=iconimage)
-		liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote(name), "Plot": UnEscapeXML(urllib.unquote(summary))})
+	if fanart=='':
+		fanart = xbmc.translatePath(os.path.join( __PLUGIN_PATH__,"fanart.jpg"))
+	u = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) + "&name=" + name+ "&summary=" + urllib.quote_plus(summary)
+	if elementId:
+		u += "&module=" + urllib.quote_plus(elementId)
+	liz = xbmcgui.ListItem(name, iconImage=iconimage, thumbnailImage=iconimage)
+	liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote(name), "Plot": UnEscapeXML(urllib.unquote(summary))})
 		
-		if not contextMenu == None:
-			liz.addContextMenuItems(items=contextMenu, replaceItems=False)
+	if contextMenu:
+		liz.addContextMenuItems(items=contextMenu, replaceItems=False)
 
-		if not fanart == '':
-			liz.setProperty("Fanart_Image", fanart)
-		ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=isFolder)
-		return ok
+	if fanart:
+		liz.setProperty("Fanart_Image", fanart)
+	ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=isFolder)
+	return ok
 
 def addVideoLink(name, url, mode, iconimage='DefaultFolder.png', summary = '', fanart='', contextMenu=True):
-		if fanart=='': fanart = xbmc.translatePath(os.path.join( __PLUGIN_PATH__,"fanart.jpg"))
-		u = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) + "&name=" + "&summary=" + urllib.quote_plus(summary)
-		liz = xbmcgui.ListItem(name, iconImage=iconimage, thumbnailImage=iconimage)
-		liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote(name), "Plot": UnEscapeXML(urllib.unquote(summary))})	
-		liz.setProperty("Fanart_Image", fanart)
-		liz.setProperty('IsPlayable', 'true')
-		if contextMenu:
-			liz.addContextMenuItems(items=[(__language__(30005).encode('utf-8'), 'XBMC.Container.Update({0})'.format(u.replace('mode=4', 'mode=8')))])
-		ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=False)
-		return ok
+	if fanart=='':
+		fanart = xbmc.translatePath(os.path.join( __PLUGIN_PATH__,"fanart.jpg"))
+	u = sys.argv[0] + "?url=" + urllib.quote_plus(url) + "&mode=" + str(mode) + "&name=" + "&summary=" + urllib.quote_plus(summary)
+	liz = xbmcgui.ListItem(name, iconImage=iconimage, thumbnailImage=iconimage)
+	liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote(name), "Plot": UnEscapeXML(urllib.unquote(summary))})	
+	liz.setProperty("Fanart_Image", fanart)
+	liz.setProperty('IsPlayable', 'true')
+	if contextMenu:
+		liz.addContextMenuItems(items=[(__language__(30005).encode('utf-8'), 'XBMC.Container.Update({0})'.format(u.replace('mode=4', 'mode=8')))])
+	ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=False)
+	return ok
 	
 def addLink(name, url, iconimage='DefaultFolder.png', sub=''):
-		liz = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
-		liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote(name), "Plot": urllib.unquote(sub)})
-		ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=liz)
-		return ok
+	liz = xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
+	liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote(name), "Plot": urllib.unquote(sub)})
+	ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=liz)
+	return ok
 
 def extractFromZip(gzipData):
 	data = StringIO.StringIO(gzipData)
@@ -161,12 +159,11 @@ def getData_attempt(url, timeout=__cachePeriod__, name='', postData=None,referer
 			else:
 				cachePath = xbmc.translatePath(os.path.join(__PLUGIN_PATH__, 'cache', 'pages', name))
 			if (os.path.exists(cachePath) and (time.time()-os.path.getmtime(cachePath))/60/60 <= float(timeout)):
-				f = open(cachePath, 'r')
-				ret = f.read()
-				f.close()
-				if __DEBUG__:
-					print 'returned data from cache'
-				return ret
+				with open(cachePath) as f:
+					ret = f.read()
+					if __DEBUG__:
+						print 'returned data from cache'
+					return ret
 		socket.setdefaulttimeout(15)
 		req = urllib2.Request(url)
 		req.add_header('User-Agent', __USERAGENT__)   
@@ -177,7 +174,7 @@ def getData_attempt(url, timeout=__cachePeriod__, name='', postData=None,referer
 		req.add_header('Connection','keep-alive')
 		req.add_header('Host',HOST)
 		req.add_header('Origin',DOMAIN)
-		if (postData):
+		if postData:
 			req.add_header('Content-Length',len(postData))
 		
 		if referer: 
@@ -196,7 +193,6 @@ def getData_attempt(url, timeout=__cachePeriod__, name='', postData=None,referer
 			f = gzip.GzipFile(fileobj=buf)
 			data = f.read()
 			#print "received gzip len " + str(len(data))
-		   
 		else:
 			data = response.read()
 
@@ -217,9 +213,8 @@ def getData_attempt(url, timeout=__cachePeriod__, name='', postData=None,referer
 		
 		try:
 			if timeout > 999999:
-				f = open(cachePath, 'wb')
-				f.write(data)
-				f.close()
+				with open(cachePath, 'wb') as f:
+					f.write(data)
 			if __DEBUG__:
 				print data
 			return data
@@ -238,7 +233,7 @@ def getData(url, timeout=__cachePeriod__, name='', postData=None,referer=__REFER
 
 def getFinalVideoUrl(series_id,season_id,episode_id,referer,silent=False,m_quality=None):
 	CHECK_LOGIN()
-	if m_quality is not None and m_quality != 'choose':
+	if m_quality and m_quality != 'choose':
 		max_quality = m_quality
 	else:
 		max_quality = int(__settings__.getSetting("max_quality"))
@@ -248,7 +243,7 @@ def getFinalVideoUrl(series_id,season_id,episode_id,referer,silent=False,m_quali
 		try:
 			page = getData(url=DOMAIN+"/ajax/watch",timeout=1,postData="watch=true&token="+tok+"&serie="+series_id+"&season="+season_id+"&episode="+episode_id,referer=referer)
 			prms=json.loads(page)
-			if prms.has_key("error"):
+			if "error" in prms:
 				dp = xbmcgui.DialogProgress()
 				dp.create("לצפייה באיכות HD וללא המתנה ניתן לרכוש מנוי", "אנא המתן 30 שניות", '', "[COLOR orange][B]לרכישת מנוי להיכנס בדפדפן - www.sdarot.click/donate[/B][/COLOR]")
 				dp.update(0)
@@ -266,7 +261,7 @@ def getFinalVideoUrl(series_id,season_id,episode_id,referer,silent=False,m_quali
 		
 		try:
 			prms=json.loads(page)
-			if prms.has_key("error"):
+			if "error" in prms:
 				error = str(prms["error"].encode("utf-8"))
 				if len(error) > 0 :
 					time.sleep(5)
@@ -280,7 +275,7 @@ def getFinalVideoUrl(series_id,season_id,episode_id,referer,silent=False,m_quali
 			for k, v in watch.iteritems():
 				qualities.append(k)
 				k = int(k)
-				if k > quality and k <= max_quality:
+				if quality < k <= max_quality:
 					quality = k
 					token = v
 			if m_quality == 'choose':
@@ -294,7 +289,7 @@ def getFinalVideoUrl(series_id,season_id,episode_id,referer,silent=False,m_quali
 			error = e
 			time.sleep(5)
 
-	if error <> '':
+	if error:
 		xbmc.log('error:'+str(error), 3)
 		if not silent:
 			xbmcgui.Dialog().ok('Error occurred',str(error))
