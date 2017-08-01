@@ -75,14 +75,14 @@ def SearchSdarot(url,search_entered):
 	matches = re.compile('href="/watch/(\d+)-(.*?)">').findall(page)
 
 	#needs to remove duplicted result (originaly in site
-	matches = [matches[i] for i,x in enumerate(matches) if x not in matches[i+1:]]
+	matches = set(matches)
 	#print matches
 	for match in matches:
 		series_id = match[0]
 		link_name = match[1]
 		image_link = DOMAIN+"/media/series/"+str(match[0])+".jpg"
 		series_link = DOMAIN+"/watch/"+str(match[0])+"/"+match[1]
-		if link_name.find('episode') == -1:
+		if 'episode' not in link_name:
 			addDir(link_name,series_link,"3&image="+urllib.quote(image_link)+"&series_id="+series_id+"&series_name="+urllib.quote(link_name),image_link)
 		
 def INDEX_AZ(url,page):
@@ -94,19 +94,19 @@ def INDEX_AZ(url,page):
 	matches = re.compile('<img.*?src="(.*?)".*?<h4>(.*?)</h4>.*?<h5>(.*?)</h5>.*?href="(.*?)"', re.S).findall(page)
 	sr_arr = []
 	for match in matches:
-	  heb_name = HTMLParser.HTMLParser().unescape(match[1].decode("utf-8")).strip()
-	  eng_name = HTMLParser.HTMLParser().unescape(match[2].decode("utf-8")).strip()
-	  if url == "all-eng":
-		sr_arr.append(( match[0], match[3], eng_name ))
-	  else:
-		sr_arr.append(( match[0], match[3], heb_name ))
-	sr_sorted = sorted(sr_arr,key=lambda sr_arr: sr_arr[2])
-	  
-	for key in sr_sorted:
-	  series_link = DOMAIN + str(key[1])
-	  image_link = 'https:' + str(key[0])
-	  series_id = image_link[image_link.rfind('/')+1:image_link.rfind('.')]
-	  addDir(key[2],series_link,"3&image="+urllib.quote(image_link)+"&series_id="+series_id+"&series_name="+urllib.quote(key[2].encode("utf-8")),image_link)
+		heb_name = HTMLParser.HTMLParser().unescape(match[1].decode("utf-8")).strip()
+		eng_name = HTMLParser.HTMLParser().unescape(match[2].decode("utf-8")).strip()
+		if url == "all-eng":
+			sr_arr.append(( match[0], match[3], eng_name ))
+		else:
+			sr_arr.append(( match[0], match[3], heb_name ))
+	sr_arr.sort(key=lambda x: x[2])
+
+	for key in sr_arr:
+		series_link = DOMAIN + str(key[1])
+		image_link = 'https:' + str(key[0])
+		series_id = image_link[image_link.rfind('/')+1:image_link.rfind('.')]
+		addDir(key[2],series_link,"3&image="+urllib.quote(image_link)+"&series_id="+series_id+"&series_name="+urllib.quote(key[2].encode("utf-8")),image_link)
 	xbmcplugin.setContent(int(sys.argv[1]), 'tvshows')
 	  
 def sdarot_series(url):
@@ -120,7 +120,7 @@ def sdarot_series(url):
 		raise e
 	matches = re.compile('תקציר הסדרה.*?<p>(.*?)</p>', re.S).findall(page)
 	summary = matches[0] if len(matches) == 1 else ""
-		
+
 	seasons_list = re.compile('id="season">(.*?)</ul>',re.S).findall(page)[0]
 	matches = re.compile('>(\d+)</a').findall(seasons_list)
 			
@@ -137,7 +137,7 @@ def sdarot_season(url, summary):
 	image_link=urllib.unquote_plus(params["image"])
 	page = getData(url=DOMAIN+"/ajax/watch?episodeList="+series_id+"&season="+season_id,timeout=0,referer=url);
 	episodes = re.compile('<li data-episode="(.*?)"').findall(page)
-	if episodes is None or (len(episodes)==0):
+	if not episodes:
 		xbmcgui.Dialog().ok('Error occurred',"לא נמצאו פרקים לעונה")
 		return
 	
