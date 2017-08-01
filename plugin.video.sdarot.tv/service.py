@@ -16,7 +16,7 @@ class ProxyMonitor(xbmc.Monitor):
             self.proxy.start()
         
     def close_proxy(self):
-        if self.proxy is not None:
+        if self.proxy:
             self.proxy.stop()
             self.proxy = None
 
