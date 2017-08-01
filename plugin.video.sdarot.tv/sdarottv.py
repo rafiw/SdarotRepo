@@ -56,12 +56,13 @@ def MAIN_MENU():
 	CHECK_LOGIN()
 	addDir('[COLOR blue]Clean chache - ניקוי מטמון[/COLOR]',"clean",7,fanart, isFolder=False)
 	addDir('[COLOR red]Search - חפש[/COLOR]',DOMAIN+"/search",6,fanart)
-	addDir("הכל א-ת","all-heb",2,fanart,DOMAIN+'/series');
-	addDir("הכל a-z","all-eng",2,fanart,DOMAIN+'/series');
+	addDir("הכל א-ת","all-heb",2,fanart,'no');
+	addDir("הכל a-z","all-eng",2,fanart,'no');
 	page = getData(DOMAIN+'/series',referer=DOMAIN)
-	matches = re.compile('<li><a href="/series/genre/(.*?)">(.*?)</a>').findall(page)
+	matches = re.compile('text="בחירת ז\'אנר">(.*?)</select>', re.S).findall(page)
+	matches = re.compile('<option value="(.*?)" >(.*?)</option>').findall(matches[0])
 	for match in matches:
-		 addDir(str(match[1]),"all-heb",2,fanart,DOMAIN+'/series/genre/'+str(match[0]))
+		 addDir(str(match[1]),"all-heb",2,fanart,str(match[0]))
 	
 def SearchSdarot(url,search_entered):
 	search_entered= ''
@@ -69,8 +70,9 @@ def SearchSdarot(url,search_entered):
 	keyboard.doModal()
 	if keyboard.isConfirmed():
 		search_entered = keyboard.getText()
-	page = getData(url=url,timeout=0,postData="search=" + search_entered)
-	matches = re.compile('<a href="/watch/(\d+)-(.*?)">').findall(page)
+	page = getData(url=url,timeout=0,postData="term=" + search_entered)
+	
+	matches = re.compile('href="/watch/(\d+)-(.*?)">').findall(page)
 
 	#needs to remove duplicted result (originaly in site
 	matches = [matches[i] for i,x in enumerate(matches) if x not in matches[i+1:]]
@@ -84,58 +86,43 @@ def SearchSdarot(url,search_entered):
 			addDir(link_name,series_link,"3&image="+urllib.quote(image_link)+"&series_id="+series_id+"&series_name="+urllib.quote(link_name),image_link)
 		
 def INDEX_AZ(url,page):
-	page = getData(page);
-	matches = re.compile('<a href="/watch/(\d+)-(.*?)">.*?</noscript>.*?<div>(.*?)</div>').findall(page)
+	if page == 'no':
+		page = 'https://www.sdarot.pm/ajax/series?loadMore=9999&start=1&search%5Bfrom%5D=&search%5Bto%5D=&search%5Border%5D=&search%5Bdir%5D='
+	else:
+		page = 'https://www.sdarot.pm/ajax/series?loadMore=9999&start=1&search%5Bgenre%5D%5B%5D={0}&search%5Bfrom%5D=&search%5Bto%5D=&search%5Border%5D=&search%5Bdir%5D='.format(page)
+	page = getData(page)
+	matches = re.compile('<img.*?src="(.*?)".*?<h4>(.*?)</h4>.*?<h5>(.*?)</h5>.*?href="(.*?)"', re.S).findall(page)
 	sr_arr = []
-	idx = 0
-	i=0
-	if url == "all-eng":
-	  idx = 1
 	for match in matches:
-	  series_id = match[0]
-	  link_name = match[1]
-	  #name = HTMLParser.HTMLParser().unescape(match[2])
-	  name = HTMLParser.HTMLParser().unescape(match[2].decode("utf-8"))
-	  m_arr = name.split(" / ")
-	  if (len(m_arr)>1) and (idx==1):
-		sr_arr.append(( series_id, link_name, m_arr[1].strip() ))
+	  heb_name = HTMLParser.HTMLParser().unescape(match[1].decode("utf-8")).strip()
+	  eng_name = HTMLParser.HTMLParser().unescape(match[2].decode("utf-8")).strip()
+	  if url == "all-eng":
+		sr_arr.append(( match[0], match[3], eng_name ))
 	  else:
-		sr_arr.append(( series_id, link_name, m_arr[0].strip() ))
-	  i=i+1
+		sr_arr.append(( match[0], match[3], heb_name ))
 	sr_sorted = sorted(sr_arr,key=lambda sr_arr: sr_arr[2])
 	  
 	for key in sr_sorted:
-	  series_link=DOMAIN+"/watch/"+str(key[0])+"/"+key[1]
-	  image_link=DOMAIN+"/media/series/"+str(key[0])+".jpg"	  
-	  addDir(key[2],series_link,"3&image="+urllib.quote(image_link)+"&series_id="+str(key[0])+"&series_name="+urllib.quote(key[2].encode("utf-8")),image_link)
+	  series_link = DOMAIN + str(key[1])
+	  image_link = 'https:' + str(key[0])
+	  series_id = image_link[image_link.rfind('/')+1:image_link.rfind('.')]
+	  addDir(key[2],series_link,"3&image="+urllib.quote(image_link)+"&series_id="+series_id+"&series_name="+urllib.quote(key[2].encode("utf-8")),image_link)
 	xbmcplugin.setContent(int(sys.argv[1]), 'tvshows')
 	  
 def sdarot_series(url):
 	series_id=urllib.unquote_plus(params["series_id"])
 	series_name=urllib.unquote_plus(params["series_name"])
 	image_link=urllib.unquote_plus(params["image"])
-	
-	#opener.addheaders = [('Referer',url)]
-	#opener.open(DOMAIN+'/landing/'+series_id).read()
-  #  print "sdarot_series: Fetching URL:"+url  
 	try:
 		page = getData(url,referer=DOMAIN+'/series')
-		#page = opener.open(url).read()
-		#print cookiejar
 	except urllib2.URLError, e:
 		print 'sdarot_season: got http error ' +str(e.code) + ' fetching ' + url + "\n"
 		raise e
-	#page = getData(url);
-	#print "Page Follows:\n"
-	#print page
-				 #<ul id="season">
-	matches = re.compile('<div id="details">.+?<p>(.+?)</p>',re.I+re.M+re.U+re.S).findall(page)
-	if len(matches) == 1:
-		summary = matches[0]
-	block_regexp='id="season">(.*?)</ul>'
-	seasons_list = re.compile(block_regexp,re.I+re.M+re.U+re.S).findall(page)[0]
-	regexp='>(\d+)</a'
-	matches = re.compile(regexp).findall(seasons_list)
+	matches = re.compile('תקציר הסדרה.*?<p>(.*?)</p>', re.S).findall(page)
+	summary = matches[0] if len(matches) == 1 else ""
+		
+	seasons_list = re.compile('id="season">(.*?)</ul>',re.S).findall(page)[0]
+	matches = re.compile('>(\d+)</a').findall(seasons_list)
 			
 	for season in matches:
 		addDir("עונה "+ str(season),url,"5&image="+urllib.quote(image_link)+"&season_id="+str(season)+"&series_id="+str(series_id)+"&series_name="+urllib.quote(series_name),image_link,summary=summary)
@@ -148,16 +135,13 @@ def sdarot_season(url, summary):
 	series_name=urllib.unquote_plus(params["series_name"])
 	season_id=urllib.unquote_plus(params["season_id"])
 	image_link=urllib.unquote_plus(params["image"])
-	page = getData(url=DOMAIN+"/ajax/watch",timeout=0,postData="episodeList=true&serie="+series_id+"&season="+season_id,referer=url);
-	
-	episodes=json.loads(page)
+	page = getData(url=DOMAIN+"/ajax/watch?episodeList="+series_id+"&season="+season_id,timeout=0,referer=url);
+	episodes = re.compile('<li data-episode="(.*?)"').findall(page)
 	if episodes is None or (len(episodes)==0):
 		xbmcgui.Dialog().ok('Error occurred',"לא נמצאו פרקים לעונה")
 		return
 	
-	#print episodes
-	for i in range (0, len(episodes)) :
-		epis= str(episodes[i]['episode'])
+	for epis in episodes:
 		addVideoLink("פרק "+epis, url, "4&episode_id="+epis+"&image="+urllib.quote(image_link)+"&season_id="+str(season_id)+"&series_id="+str(series_id)+"&series_name="+urllib.quote(series_name),image_link, summary)		 
 	xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
 	xbmc.executebuiltin('Container.SetViewMode(504)')
